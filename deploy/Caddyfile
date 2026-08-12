@@ -1,0 +1,20 @@
+# Everything lives on one origin, so the browser never makes a cross-origin
+# request and the socket upgrade stays on the same host.
+{$WIKICONN_DOMAIN} {
+	encode zstd gzip
+
+	# Socket.IO is mounted at the root of the API and must keep its own path,
+	# so it is proxied before the /api prefix rule and without stripping.
+	handle /socket.io/* {
+		reverse_proxy api:3001
+	}
+
+	# handle_path strips /api, so the API keeps serving /rooms, /wiki, /health.
+	handle_path /api/* {
+		reverse_proxy api:3001
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}

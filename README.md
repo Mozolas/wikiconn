@@ -79,6 +79,29 @@ Server to client: `room:state`, `room:player-joined`, `room:player-left`,
 Both apps read their settings from env files; see `apps/api/.env.example` and
 `apps/web/.env.example` for the full list and defaults.
 
+## Deploying
+
+Every merge to `main` runs the checks, builds both images, pushes them to GHCR
+and rolls the stack on the server over SSH. That is all of
+`.github/workflows/deploy.yml`; the server needs nothing but Docker.
+
+Caddy terminates TLS and keeps everything on one origin: `/socket.io/*` and
+`/api/*` go to the API, the rest to Next. Since `NEXT_PUBLIC_*` is baked into
+the client bundle at build time, changing the domain means rebuilding the web
+image rather than editing an env file — the workflow passes it as a build arg.
+
+Repository secrets:
+
+| Secret | What |
+| --- | --- |
+| `DEPLOY_HOST` | server hostname or IP |
+| `DEPLOY_USER` | SSH user on that host |
+| `DEPLOY_SSH_KEY` | private key for that user |
+| `DEPLOY_KNOWN_HOSTS` | optional; pins the host key instead of trusting it on first connection |
+
+Set the repository variable `WIKICONN_DOMAIN` to deploy somewhere other than
+`wikiconn.mozola.net`.
+
 ## Licence
 
 MIT, see [LICENSE](LICENSE).

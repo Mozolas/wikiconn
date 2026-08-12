@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 import type { NextConfig } from 'next';
 
 // Defense-in-depth headers. A strict script-src CSP is intentionally omitted
@@ -25,6 +27,11 @@ const devOrigins = (process.env['NEXT_DEV_ALLOWED_ORIGINS'] ?? '')
 const config: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@wikiconn/shared'],
+  // Ships a self-contained server with only the traced dependencies, which is
+  // what the production image runs. Tracing has to start at the workspace root
+  // or it would miss @wikiconn/shared.
+  output: 'standalone',
+  outputFileTracingRoot: fileURLToPath(new URL('../../', import.meta.url)),
   ...(devOrigins.length > 0 ? { allowedDevOrigins: devOrigins } : {}),
   experimental: {
     optimizePackageImports: ['lucide-react'],

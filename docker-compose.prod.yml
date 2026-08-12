@@ -1,0 +1,64 @@
+# Production stack. Deployed to the server by .github/workflows/deploy.yml,
+# which writes the accompanying .env with the image tags to run.
+name: wikiconn
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      WIKICONN_DOMAIN: ${WIKICONN_DOMAIN:?set WIKICONN_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+      - api
+
+  web:
+    image: ${WEB_IMAGE:?set WEB_IMAGE}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    expose:
+      - '3000'
+
+  api:
+    image: ${API_IMAGE:?set API_IMAGE}
+    restart: unless-stopped
+    environment:
+      PORT: '3001'
+      REDIS_URL: redis://dragonfly:6379
+      CORS_ORIGIN: https://${WIKICONN_DOMAIN}
+      WIKI_CACHE_TTL_SECONDS: '3600'
+      WIKI_SEARCH_CACHE_TTL_SECONDS: '300'
+      # Wikimedia's policy asks automated clients to identify themselves.
+      WIKI_USER_AGENT: WikiConn/1.0 (https://${WIKICONN_DOMAIN})
+      LOG_LEVEL: log
+    expose:
+      - '3001'
+    depends_on:
+      dragonfly:
+        condition: service_healthy
+
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    restart: unless-stopped
+    ulimits:
+      memlock: -1
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - dragonfly-data:/data
+
+volumes:
+  caddy-data:
+  caddy-config:
+  dragonfly-data:

@@ -1,0 +1,152 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never let two deploys overlap; the later merge wins.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  DOMAIN: ${{ vars.WIKICONN_DOMAIN || 'wikiconn.mozola.net' }}
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 10
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm test
+
+  images:
+    name: Build images
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push API
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository }}-api:latest
+            ${{ env.REGISTRY }}/${{ github.repository }}-api:${{ github.sha }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: Build and push web
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          # Baked into the client bundle, so they have to be right at build time.
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://${{ env.DOMAIN }}/api
+            NEXT_PUBLIC_SOCKET_URL=https://${{ env.DOMAIN }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository }}-web:latest
+            ${{ env.REGISTRY }}/${{ github.repository }}-web:${{ github.sha }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+  deploy:
+    name: Deploy to Hetzner
+    needs: images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Ship the stack
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          SSH_HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.DEPLOY_USER }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY_USER: ${{ github.actor }}
+          REPO: ${{ github.repository }}
+          IMAGE_TAG: ${{ github.sha }}
+          DOMAIN: ${{ env.DOMAIN }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if [ -n "$KNOWN_HOSTS" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            # Trust on first use. Set DEPLOY_KNOWN_HOSTS to pin the host key.
+            ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          fi
+
+          SSH="ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes"
+          SCP="scp -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes"
+
+          $SSH "$SSH_USER@$SSH_HOST" 'mkdir -p wikiconn'
+          $SCP docker-compose.prod.yml "$SSH_USER@$SSH_HOST:wikiconn/docker-compose.yml"
+          $SCP deploy/Caddyfile "$SSH_USER@$SSH_HOST:wikiconn/Caddyfile"
+
+          $SSH "$SSH_USER@$SSH_HOST" \
+            REGISTRY_TOKEN="$REGISTRY_TOKEN" \
+            REGISTRY_USER="$REGISTRY_USER" \
+            REPO="$REPO" \
+            IMAGE_TAG="$IMAGE_TAG" \
+            DOMAIN="$DOMAIN" \
+            'bash -s' <<'REMOTE'
+          set -euo pipefail
+          cd wikiconn
+
+          cat > .env <<ENV
+          WIKICONN_DOMAIN=$DOMAIN
+          WEB_IMAGE=ghcr.io/$REPO-web:$IMAGE_TAG
+          API_IMAGE=ghcr.io/$REPO-api:$IMAGE_TAG
+          ENV
+
+          echo "$REGISTRY_TOKEN" | docker login ghcr.io -u "$REGISTRY_USER" --password-stdin
+          docker compose pull
+          docker compose up -d --remove-orphans
+          docker logout ghcr.io
+          docker image prune -f
+          REMOTE
+
+      - name: Wait for the site to answer
+        run: |
+          for attempt in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://${{ env.DOMAIN }}/" || true)
+            if [ "$code" = "200" ]; then echo "up after $attempt attempt(s)"; exit 0; fi
+            sleep 5
+          done
+          echo "site did not return 200 in time"
+          exit 1
