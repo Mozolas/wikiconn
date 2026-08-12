@@ -1,0 +1,654 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+   Palette
+   Derived from Wikipedia's Vector 2022 skin and the Codex design tokens, so the
+   app and the articles it renders share one visual language. Light mode is the
+   familiar "paper" look; dark mode follows Wikipedia's night mode.
+   --------------------------------------------------------------------------- */
+
+:root {
+  color-scheme: light;
+
+  /* Wikipedia surfaces */
+  --wiki-paper: #ffffff;
+  --wiki-canvas: #f8f9fa;
+  --wiki-surface-subtle: #f8f9fa;
+  --wiki-surface-raised: #eaecf0;
+  --wiki-border-strong: #a2a9b1;
+  --wiki-border-subtle: #c8ccd1;
+  --wiki-text: #202122;
+  --wiki-text-subtle: #54595d;
+  --wiki-link: #3366cc;
+  --wiki-link-hover: #3056a9;
+  --wiki-link-visited: #6b4ba1;
+  --wiki-link-red: #d73333;
+  --wiki-accent-soft: #eaf3ff;
+  --wiki-warning: #edab00;
+  --wiki-warning-surface: #fef6e7;
+  --wiki-success: #14866d;
+  --wiki-success-surface: #eafaf1;
+
+  /* shadcn contract, expressed in Wikipedia colours */
+  --background: var(--wiki-canvas);
+  --foreground: var(--wiki-text);
+  --card: var(--wiki-paper);
+  --card-foreground: var(--wiki-text);
+  --popover: var(--wiki-paper);
+  --popover-foreground: var(--wiki-text);
+  --primary: var(--wiki-link);
+  --primary-foreground: #ffffff;
+  --secondary: var(--wiki-surface-raised);
+  --secondary-foreground: var(--wiki-text);
+  --muted: var(--wiki-surface-subtle);
+  --muted-foreground: var(--wiki-text-subtle);
+  --accent: var(--wiki-accent-soft);
+  --accent-foreground: var(--wiki-link-hover);
+  --destructive: #bf3c2c;
+  --destructive-foreground: #ffffff;
+  --border: var(--wiki-border-subtle);
+  --input: var(--wiki-border-strong);
+  --ring: var(--wiki-link);
+  --radius: 0.25rem;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --wiki-paper: #101418;
+  --wiki-canvas: #101418;
+  --wiki-surface-subtle: #202122;
+  --wiki-surface-raised: #27292d;
+  --wiki-border-strong: #72777d;
+  --wiki-border-subtle: #54595d;
+  --wiki-text: #f8f9fa;
+  --wiki-text-subtle: #a2a9b1;
+  --wiki-link: #6e93e3;
+  --wiki-link-hover: #88a3e8;
+  --wiki-link-visited: #a799cd;
+  --wiki-link-red: #fd7865;
+  --wiki-accent-soft: #1b2231;
+  --wiki-warning: #edab00;
+  --wiki-warning-surface: #2d2600;
+  --wiki-success: #2cbba1;
+  --wiki-success-surface: #032e2b;
+
+  --primary-foreground: #101418;
+  --destructive: #fd7865;
+  --destructive-foreground: #101418;
+  --accent-foreground: var(--wiki-link-hover);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-wiki-paper: var(--wiki-paper);
+  --color-wiki-canvas: var(--wiki-canvas);
+  --color-wiki-subtle: var(--wiki-surface-subtle);
+  --color-wiki-raised: var(--wiki-surface-raised);
+  --color-wiki-line: var(--wiki-border-strong);
+  --color-wiki-line-subtle: var(--wiki-border-subtle);
+  --color-wiki-text: var(--wiki-text);
+  --color-wiki-muted: var(--wiki-text-subtle);
+  --color-wiki-link: var(--wiki-link);
+  --color-wiki-visited: var(--wiki-link-visited);
+  --color-wiki-warning: var(--wiki-warning);
+  --color-wiki-warning-surface: var(--wiki-warning-surface);
+  --color-wiki-success: var(--wiki-success);
+  --color-wiki-success-surface: var(--wiki-success-surface);
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Lato, Helvetica, Arial, sans-serif;
+  --font-serif: 'Linux Libertine', 'Georgia', 'Times New Roman', Times, serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+
+  --radius-sm: calc(var(--radius) - 1px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 6px);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--wiki-link);
+    outline-offset: 1px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--wiki-link) 25%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Racer accents
+   One colour per seat, held for the whole game so a player is recognisable at a
+   glance. Each has a lighter twin for the dark theme.
+   --------------------------------------------------------------------------- */
+
+.racer-0 {
+  --racer: #3366cc;
+}
+.racer-1 {
+  --racer: #14866d;
+}
+.racer-2 {
+  --racer: #b32424;
+}
+.racer-3 {
+  --racer: #8f5d00;
+}
+.racer-4 {
+  --racer: #7d4b9e;
+}
+
+.dark .racer-0 {
+  --racer: #7fa5f0;
+}
+.dark .racer-1 {
+  --racer: #2cbba1;
+}
+.dark .racer-2 {
+  --racer: #fd7865;
+}
+.dark .racer-3 {
+  --racer: #d9a300;
+}
+.dark .racer-4 {
+  --racer: #b799e0;
+}
+
+.racer-avatar {
+  color: var(--racer);
+  background: color-mix(in srgb, var(--racer) 16%, transparent);
+}
+
+.racer-dot {
+  background: var(--racer);
+}
+
+/* Indeterminate loader shown while the next article is on its way. */
+@keyframes wiki-progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+.wiki-progress {
+  animation: wiki-progress 1s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------------------------
+   Rendered Wikipedia article
+   The API strips <style> and TemplateStyles along with every inline style, so
+   infoboxes, thumbnails and message boxes arrive as bare markup. Everything
+   below re-creates that chrome from the classes Parsoid keeps, in both themes.
+   --------------------------------------------------------------------------- */
+
+.wiki-article {
+  color: var(--wiki-text);
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.wiki-article p {
+  margin: 0.5em 0 0;
+}
+
+.wiki-article > section > *:first-child,
+.wiki-article > *:first-child {
+  margin-top: 0;
+}
+
+.wiki-article h2,
+.wiki-article h3,
+.wiki-article h4,
+.wiki-article h5,
+.wiki-article h6 {
+  font-weight: 600;
+  margin: 1.2em 0 0.25em;
+  scroll-margin-top: 5rem;
+}
+
+.wiki-article h2 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 1.5rem;
+  line-height: 1.3;
+  padding-bottom: 0.25em;
+  margin-top: 1.4em;
+  border-bottom: 1px solid var(--wiki-border-strong);
+}
+
+.wiki-article h3 {
+  font-size: 1.125rem;
+}
+
+.wiki-article h4,
+.wiki-article h5,
+.wiki-article h6 {
+  font-size: 1rem;
+}
+
+.wiki-article a {
+  color: var(--wiki-link);
+  text-decoration: none;
+}
+
+.wiki-article a:hover {
+  color: var(--wiki-link-hover);
+  text-decoration: underline;
+}
+
+.wiki-article a:visited {
+  color: var(--wiki-link-visited);
+}
+
+.wiki-article a.new {
+  color: var(--wiki-link-red);
+}
+
+/* Links the game cannot follow: namespaces, externals, dead anchors. */
+.wiki-article a[data-wiki-skip],
+.wiki-article a[data-external-href],
+.wiki-article a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+  cursor: default;
+}
+
+.wiki-article ul,
+.wiki-article ol {
+  margin: 0.3em 0 0 1.6em;
+  padding: 0;
+}
+
+.wiki-article ul {
+  list-style: disc;
+}
+
+.wiki-article ol {
+  list-style: decimal;
+}
+
+.wiki-article li {
+  margin-bottom: 0.1em;
+}
+
+.wiki-article dl {
+  margin: 0.4em 0;
+}
+
+.wiki-article dd {
+  margin: 0 0 0.2em 1.6em;
+}
+
+.wiki-article dt {
+  font-weight: 700;
+}
+
+.wiki-article b,
+.wiki-article strong {
+  font-weight: 700;
+}
+
+.wiki-article blockquote {
+  border-left: 3px solid var(--wiki-border-subtle);
+  margin: 0.8em 0 0.8em 1em;
+  padding: 0.2em 0 0.2em 1em;
+  color: var(--wiki-text-subtle);
+}
+
+.wiki-article code,
+.wiki-article pre {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--wiki-surface-subtle);
+  border: 1px solid var(--wiki-border-subtle);
+  border-radius: 2px;
+}
+
+.wiki-article code {
+  padding: 0.1em 0.3em;
+}
+
+.wiki-article pre {
+  padding: 0.6em 0.8em;
+  overflow-x: auto;
+}
+
+.wiki-article hr {
+  border: 0;
+  border-top: 1px solid var(--wiki-border-subtle);
+  margin: 1em 0;
+}
+
+/* Images ------------------------------------------------------------------ */
+
+.wiki-article img {
+  max-width: 100%;
+  height: auto;
+}
+
+.wiki-article figure[typeof~='mw:File/Thumb'],
+.wiki-article figure[typeof~='mw:File/Frame'],
+.wiki-article .thumb {
+  float: right;
+  clear: right;
+  width: 22em;
+  max-width: 45%;
+  margin: 0.4em 0 1em 1.4em;
+  padding: 3px;
+  border: 1px solid var(--wiki-border-subtle);
+  background: var(--wiki-surface-subtle);
+}
+
+.wiki-article figure[typeof~='mw:File/Thumb'] img,
+.wiki-article .thumb img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.wiki-article figcaption,
+.wiki-article .thumbcaption {
+  padding: 0.45em 0.2em 0.2em;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--wiki-text-subtle);
+}
+
+.wiki-article .mw-halign-left {
+  float: left;
+  clear: left;
+  margin: 0.4em 1.4em 1em 0;
+}
+
+.wiki-article .mw-halign-center {
+  float: none;
+  margin: 0.8em auto;
+}
+
+.wiki-article .mw-halign-none {
+  float: none;
+}
+
+.wiki-article .gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+  margin: 0.8em 0;
+  list-style: none;
+  padding: 0;
+}
+
+.wiki-article .gallerybox {
+  border: 1px solid var(--wiki-border-subtle);
+  background: var(--wiki-surface-subtle);
+  padding: 4px;
+  max-width: 100%;
+}
+
+/* Infobox ----------------------------------------------------------------- */
+
+.wiki-article .infobox,
+.wiki-article .sidebar {
+  float: right;
+  clear: right;
+  width: 22em;
+  max-width: 100%;
+  margin: 0 0 1em 1.4em;
+  border: 1px solid var(--wiki-border-strong);
+  background: var(--wiki-surface-subtle);
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.wiki-article .infobox > caption,
+.wiki-article .infobox-title,
+.wiki-article .infobox-above {
+  padding: 0.4em 0.6em;
+  font-size: 1.1em;
+  font-weight: 700;
+  text-align: center;
+  background: var(--wiki-surface-raised);
+}
+
+.wiki-article .infobox th,
+.wiki-article .infobox td,
+.wiki-article .sidebar th,
+.wiki-article .sidebar td {
+  padding: 0.25em 0.6em;
+  vertical-align: top;
+  border: 0;
+  border-top: 1px solid var(--wiki-border-subtle);
+  text-align: left;
+}
+
+.wiki-article .infobox-label,
+.wiki-article .infobox th[scope='row'] {
+  font-weight: 700;
+  width: 40%;
+}
+
+.wiki-article .infobox-header,
+.wiki-article .infobox-subheader,
+.wiki-article .infobox .mergedtoprow {
+  background: var(--wiki-surface-raised);
+  text-align: center;
+  font-weight: 700;
+}
+
+.wiki-article .infobox-image,
+.wiki-article .infobox-caption {
+  text-align: center;
+}
+
+/* Tables ------------------------------------------------------------------ */
+
+.wiki-article table:not(.infobox):not(.sidebar):not(.navbox) {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 0.875rem;
+}
+
+.wiki-article .wikitable {
+  background: var(--wiki-paper);
+  border: 1px solid var(--wiki-border-strong);
+}
+
+.wiki-article .wikitable > * > tr > th,
+.wiki-article .wikitable > * > tr > td {
+  border: 1px solid var(--wiki-border-strong);
+  padding: 0.3em 0.6em;
+  vertical-align: top;
+}
+
+.wiki-article .wikitable > * > tr > th {
+  background: var(--wiki-surface-raised);
+  text-align: center;
+  font-weight: 700;
+}
+
+/* Message boxes, hatnotes, navboxes ---------------------------------------- */
+
+.wiki-article .hatnote,
+.wiki-article .dablink,
+.wiki-article .rellink {
+  margin: 0.3em 0 0.6em 1.6em;
+  font-style: italic;
+  color: var(--wiki-text-subtle);
+}
+
+.wiki-article .ambox,
+.wiki-article .mbox,
+.wiki-article .tmbox,
+.wiki-article .ombox {
+  margin: 0.8em 0;
+  padding: 0.5em 0.8em;
+  border: 1px solid var(--wiki-border-subtle);
+  border-left: 8px solid var(--wiki-border-strong);
+  background: var(--wiki-surface-subtle);
+  font-size: 0.875rem;
+}
+
+.wiki-article .ambox-content,
+.wiki-article .ambox-style {
+  border-left-color: var(--wiki-warning);
+  background: var(--wiki-warning-surface);
+}
+
+.wiki-article .navbox {
+  margin: 1.2em 0 0;
+  padding: 2px;
+  border: 1px solid var(--wiki-border-subtle);
+  background: var(--wiki-surface-subtle);
+  font-size: 0.8125rem;
+  text-align: center;
+  width: 100%;
+}
+
+.wiki-article .navbox-title,
+.wiki-article .navbox-abovebelow,
+.wiki-article .navbox-group {
+  background: var(--wiki-surface-raised);
+  padding: 0.2em 0.6em;
+  font-weight: 700;
+}
+
+.wiki-article .navbox-list {
+  padding: 0.2em 0.6em;
+  text-align: left;
+}
+
+/* References -------------------------------------------------------------- */
+
+.wiki-article .reference {
+  font-size: 0.75em;
+  line-height: 1;
+  vertical-align: super;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+}
+
+.wiki-article .reflist,
+.wiki-article .refbegin,
+.wiki-article .mw-references-wrap {
+  font-size: 0.8125rem;
+  column-width: 30em;
+}
+
+.wiki-article .mw-references-wrap ol {
+  margin-left: 2em;
+}
+
+.wiki-article .mw-cite-backlink {
+  font-style: italic;
+}
+
+/* Chrome that has no meaning outside wikipedia.org ------------------------- */
+
+.wiki-article .mw-editsection,
+.wiki-article .shortdescription,
+.wiki-article .mw-empty-elt,
+.wiki-article .metadata.plainlinks.stub,
+.wiki-article #coordinates,
+.wiki-article .mw-jump-link,
+.wiki-article style {
+  display: none;
+}
+
+.wiki-article .mw-collapsible-toggle,
+.wiki-article .collapseButton {
+  display: none;
+}
+
+/* Clear floats at the end so the next block never wraps around an infobox. */
+.wiki-article::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+@media (max-width: 40rem) {
+  .wiki-article {
+    font-size: 0.9375rem;
+  }
+
+  .wiki-article .infobox,
+  .wiki-article .sidebar,
+  .wiki-article figure[typeof~='mw:File/Thumb'],
+  .wiki-article figure[typeof~='mw:File/Frame'],
+  .wiki-article .thumb,
+  .wiki-article .mw-halign-left {
+    float: none;
+    clear: both;
+    width: 100%;
+    max-width: 100%;
+    margin: 0.8em 0;
+  }
+
+  .wiki-article .reflist,
+  .wiki-article .refbegin,
+  .wiki-article .mw-references-wrap {
+    column-width: auto;
+  }
+}

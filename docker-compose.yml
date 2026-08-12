@@ -1,0 +1,19 @@
+services:
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: wikiconn-dragonfly
+    restart: unless-stopped
+    ports:
+      - '6380:6379'
+    ulimits:
+      memlock: -1
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - dragonfly-data:/data
+
+volumes:
+  dragonfly-data:
