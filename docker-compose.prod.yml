@@ -36,8 +36,9 @@ services:
       CORS_ORIGIN: https://${WIKICONN_DOMAIN}
       WIKI_CACHE_TTL_SECONDS: '3600'
       WIKI_SEARCH_CACHE_TTL_SECONDS: '300'
-      # Wikimedia's policy asks automated clients to identify themselves.
-      WIKI_USER_AGENT: WikiConn/1.0 (https://${WIKICONN_DOMAIN})
+      # Wikimedia's policy asks automated clients to identify themselves and to
+      # provide a way of reaching the operator.
+      WIKI_USER_AGENT: WikiConn/1.0 (https://${WIKICONN_DOMAIN}; https://github.com/Mozolas/wikiconn)
       LOG_LEVEL: log
     expose:
       - '3001'

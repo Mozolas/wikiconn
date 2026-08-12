@@ -27,4 +27,12 @@ describe('envSchema', () => {
   it('rejects unknown LOG_LEVEL', () => {
     expect(envSchema.safeParse({ LOG_LEVEL: 'info' }).success).toBe(false);
   });
+
+  // Wikimedia throttles and eventually blocks clients that do not say who they
+  // are, and the failure looks like flaky article loading rather than a ban.
+  it('defaults to a user agent that names the project and how to reach it', () => {
+    const { WIKI_USER_AGENT: agent } = envSchema.parse({});
+    expect(agent).toMatch(/^WikiConn\/\d+\.\d+/);
+    expect(agent).toMatch(/https?:\/\/\S+|\S+@\S+\.\S+/);
+  });
 });
