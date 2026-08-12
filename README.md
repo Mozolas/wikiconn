@@ -8,6 +8,10 @@ Articles are fetched from Wikipedia, sanitized on the server and rendered in a
 copy of the Vector 2022 skin, so the page you race through looks like the real
 thing. Without the search box, obviously.
 
+![Racing through Albert Einstein towards Pizza: contents rail on the left, target and timer in the header, rivals on the right](docs/race.png)
+
+![The lobby: the host picks the route and how much racers see about each other](docs/lobby.png)
+
 ## Running it
 
 Needs Node 24, pnpm 10 and Docker.
