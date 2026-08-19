@@ -45,7 +45,7 @@ jobs:
         # An image reference has to be lowercase; the repository owner is not.
         run: echo "IMAGE_BASE=$REGISTRY/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
