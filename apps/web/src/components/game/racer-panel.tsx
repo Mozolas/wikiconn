@@ -4,6 +4,7 @@ import { type PlayerState, type VisibilitySettings } from '@wikiconn/shared';
 import { Crown, Flag, MousePointerClick, WifiOff } from 'lucide-react';
 import { type ReactNode } from 'react';
 
+import { useDictionary, usePlural } from '@/i18n/context';
 import { humanSlug, initialGrapheme } from '@/lib/format';
 import { racerAccentClass } from '@/lib/racer-accent';
 import { cn } from '@/lib/utils';
@@ -18,8 +19,11 @@ interface Props {
 const PATH_TAIL = 3;
 
 export function RacerPanel({ players, hostPlayerId, selfPlayerId, visibility }: Props): ReactNode {
+  const { play, lobby } = useDictionary();
+  const pluralize = usePlural();
+
   if (players.length === 0) {
-    return <p className="text-sm text-muted-foreground">No racers yet.</p>;
+    return <p className="text-sm text-muted-foreground">{play.noRacers}</p>;
   }
 
   return (
@@ -49,10 +53,13 @@ export function RacerPanel({ players, hostPlayerId, selfPlayerId, visibility }: 
               </span>
               <span className="min-w-0 flex-1 truncate text-sm font-medium">
                 {player.nickname}
-                {isSelf ? <span className="ml-1 text-muted-foreground">(you)</span> : null}
+                {isSelf ? <span className="ml-1 text-muted-foreground">{lobby.you}</span> : null}
               </span>
               {player.playerId === hostPlayerId ? (
-                <Crown aria-label="Host" className="size-3.5 shrink-0 text-muted-foreground" />
+                <Crown
+                  aria-label={lobby.host}
+                  className="size-3.5 shrink-0 text-muted-foreground"
+                />
               ) : null}
               {player.connected ? null : (
                 <WifiOff aria-label="Disconnected" className="size-3.5 shrink-0 text-destructive" />
@@ -62,7 +69,7 @@ export function RacerPanel({ players, hostPlayerId, selfPlayerId, visibility }: 
             {finished ? (
               <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-primary">
                 <Flag aria-hidden="true" className="size-3" />
-                Finished
+                {play.finished}
               </p>
             ) : null}
 
@@ -71,24 +78,24 @@ export function RacerPanel({ players, hostPlayerId, selfPlayerId, visibility }: 
             <dl className="mt-2 space-y-1 text-xs text-muted-foreground">
               {showClicks ? (
                 <div>
-                  <dt className="sr-only">Clicks</dt>
+                  <dt className="sr-only">{play.clicksLabel}</dt>
                   <dd className="flex items-center gap-1.5">
                     <MousePointerClick aria-hidden="true" className="size-3" />
-                    {player.clickCount} click{player.clickCount === 1 ? '' : 's'}
+                    {pluralize(play.clicks, player.clickCount)}
                   </dd>
                 </div>
               ) : null}
 
               {showCurrent && player.currentSlug !== undefined ? (
                 <div>
-                  <dt className="sr-only">Currently reading</dt>
+                  <dt className="sr-only">{play.currentlyReading}</dt>
                   <dd className="truncate text-foreground">{humanSlug(player.currentSlug)}</dd>
                 </div>
               ) : null}
 
               {showPath && tail.length > 1 ? (
                 <div className="hidden lg:block">
-                  <dt className="sr-only">Recent route</dt>
+                  <dt className="sr-only">{play.recentRoute}</dt>
                   <dd className="line-clamp-2 leading-snug">
                     {player.path.length > PATH_TAIL ? '… → ' : ''}
                     {tail.map((slug) => humanSlug(slug)).join(' → ')}
@@ -98,7 +105,7 @@ export function RacerPanel({ players, hostPlayerId, selfPlayerId, visibility }: 
             </dl>
 
             {showClicks || showCurrent ? null : (
-              <p className="mt-2 text-xs italic text-muted-foreground">hidden by the host</p>
+              <p className="mt-2 text-xs italic text-muted-foreground">{play.hiddenByHost}</p>
             )}
           </li>
         );

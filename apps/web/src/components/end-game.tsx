@@ -1,7 +1,6 @@
 'use client';
 
 import { type FinalPlayerState, type GameWonPayload, type RoomState } from '@wikiconn/shared';
-import confetti from 'canvas-confetti';
 import { Crown, MousePointerClick, Timer, Trophy } from 'lucide-react';
 import { type ReactNode, useEffect } from 'react';
 
@@ -14,6 +13,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useDictionary, usePlural } from '@/i18n/context';
+import { type Dictionary } from '@/i18n/dictionaries/en';
+import { format, type PluralForms } from '@/i18n/plural';
 import { formatDuration, humanSlug, initialGrapheme } from '@/lib/format';
 import { racerAccentClass } from '@/lib/racer-accent';
 import { cn } from '@/lib/utils';
@@ -44,6 +46,8 @@ export function EndGame({
   onPlayAgain,
   onDismiss,
 }: Props): ReactNode {
+  const { endGame, lobby, play } = useDictionary();
+  const pluralize = usePlural();
   const isHost = room.hostPlayerId === selfPlayerId;
   const winner: FinalPlayerState | null =
     payload === null ? null : (payload.finalStates[payload.winnerId] ?? null);
@@ -85,13 +89,17 @@ export function EndGame({
 
   useEffect(() => {
     if (!open) return;
-    void confetti({
-      particleCount: 40,
-      spread: 55,
-      startVelocity: 35,
-      origin: { y: 0.7 },
-      disableForReducedMotion: true,
-    });
+    // Loaded on the win rather than on the route: most of a race happens with
+    // this dialog closed.
+    void import('canvas-confetti').then(({ default: confetti }) =>
+      confetti({
+        particleCount: 40,
+        spread: 55,
+        startVelocity: 35,
+        origin: { y: 0.7 },
+        disableForReducedMotion: true,
+      }),
+    );
   }, [open]);
 
   return (
@@ -107,18 +115,24 @@ export function EndGame({
             <Trophy aria-hidden="true" className="size-5" />
           </div>
           <DialogTitle className="text-center font-serif text-2xl">
-            {winner === null ? 'Race over' : `${winner.nickname} wins!`}
+            {winner === null
+              ? endGame.raceOver
+              : format(endGame.winnerTitle, { nickname: winner.nickname })}
           </DialogTitle>
           <DialogDescription className="text-center">
             {payload === null || winner === null
-              ? 'The race has ended.'
-              : `Reached ${humanSlug(room.settings.finishSlug ?? '')} in ${formatDuration(payload.durationMs)} after ${String(winner.clickCount)} click${winner.clickCount === 1 ? '' : 's'}.`}
+              ? endGame.ended
+              : format(endGame.winnerLine, {
+                  target: humanSlug(room.settings.finishSlug ?? ''),
+                  duration: formatDuration(payload.durationMs),
+                  clicks: pluralize(play.clicks, winner.clickCount),
+                })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="max-h-[55vh] space-y-3 overflow-y-auto pr-1">
           {ordered.length === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">No players.</p>
+            <p className="py-4 text-center text-sm text-muted-foreground">{endGame.noPlayers}</p>
           ) : null}
 
           {ordered.map((row, rank) => (
@@ -129,6 +143,8 @@ export function EndGame({
               isWinner={row.playerId === winnerId}
               isSelf={row.playerId === selfPlayerId}
               accent={racerAccentClass(seatOf.get(row.playerId) ?? rank)}
+              dict={{ endGame, lobby, play }}
+              pluralize={pluralize}
             />
           ))}
         </div>
@@ -136,11 +152,11 @@ export function EndGame({
         <DialogFooter>
           {isHost ? (
             <Button onClick={onPlayAgain} className="w-full sm:w-auto">
-              Race again
+              {endGame.raceAgain}
             </Button>
           ) : (
             <p className="text-center text-xs text-muted-foreground sm:text-left">
-              Waiting for the host to start another race…
+              {endGame.waitingForHost}
             </p>
           )}
         </DialogFooter>
@@ -149,18 +165,28 @@ export function EndGame({
   );
 }
 
+interface ResultCardCopy {
+  endGame: Dictionary['endGame'];
+  lobby: Dictionary['lobby'];
+  play: Dictionary['play'];
+}
+
 function ResultCard({
   row,
   rank,
   isWinner,
   isSelf,
   accent,
+  dict,
+  pluralize,
 }: {
   row: RankedRow;
   rank: number;
   isWinner: boolean;
   isSelf: boolean;
   accent: string;
+  dict: ResultCardCopy;
+  pluralize: (forms: PluralForms, count: number) => string;
 }): ReactNode {
   return (
     <section
@@ -179,12 +205,12 @@ function ResultCard({
         </span>
         <span className="min-w-0 flex-1 truncate font-medium">
           {row.nickname}
-          {isSelf ? <span className="ml-1 text-muted-foreground">(you)</span> : null}
+          {isSelf ? <span className="ml-1 text-muted-foreground">{dict.lobby.you}</span> : null}
         </span>
         {isWinner ? (
           <span className="flex items-center gap-1 text-xs font-medium text-primary">
             <Crown aria-hidden="true" className="size-3.5" />
-            Winner
+            {dict.endGame.winner}
           </span>
         ) : null}
       </div>
@@ -192,7 +218,7 @@ function ResultCard({
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 pl-8 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
           <MousePointerClick aria-hidden="true" className="size-3" />
-          {row.clickCount} click{row.clickCount === 1 ? '' : 's'}
+          {pluralize(dict.play.clicks, row.clickCount)}
         </span>
         {row.durationMs === undefined ? null : (
           <span className="flex items-center gap-1">
@@ -200,13 +226,13 @@ function ResultCard({
             {formatDuration(row.durationMs)}
           </span>
         )}
-        {row.finishedAt === undefined ? <span>did not finish</span> : null}
+        {row.finishedAt === undefined ? <span>{dict.endGame.didNotFinish}</span> : null}
       </div>
 
       {row.path.length > 0 ? (
         <div className="mt-3 pl-8">
           <p className="mb-1.5 text-xs text-muted-foreground">
-            Route · {row.path.length} article{row.path.length === 1 ? '' : 's'}
+            {pluralize(dict.endGame.route, row.path.length)}
           </p>
           <ol className="space-y-1 border-l border-border pl-3.5">
             {row.path.map((slug, index) => {
@@ -228,12 +254,12 @@ function ResultCard({
                     <span className={cn(isFinish && 'font-semibold')}>{humanSlug(slug)}</span>
                     {isStart ? (
                       <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                        start
+                        {dict.endGame.start}
                       </span>
                     ) : null}
                     {isFinish ? (
                       <span className="text-[10px] uppercase tracking-wider text-primary">
-                        finish
+                        {dict.endGame.finish}
                       </span>
                     ) : null}
                   </span>

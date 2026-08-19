@@ -4,6 +4,7 @@ import { type Language } from '@wikiconn/shared';
 import { memo, type ReactNode, useEffect, useLayoutEffect, useRef } from 'react';
 
 import { cn } from '@/lib/utils';
+import { WIKIPEDIA_CHROME } from '@/lib/wikipedia-chrome';
 
 /** Prefixed so it cannot collide with an id inside the article itself. */
 export const ARTICLE_TOP_ID = 'wikiconn-article-top';
@@ -80,17 +81,25 @@ export const ArticleView = memo(function ArticleView({
       )}
       aria-busy={busy}
     >
-      <header className="border-b border-wiki-line pb-2">
+      {/* The whole block is Wikipedia's, in Wikipedia's language, which is not
+          necessarily the interface's: without this a screen reader would read an
+          English article with Czech phonetics. */}
+      <header lang={lang} className="border-b border-wiki-line pb-2">
         <h1
           id={ARTICLE_TOP_ID}
           className="scroll-mt-20 font-serif text-2xl leading-tight sm:text-[2rem]"
         >
           {title}
         </h1>
-        <p className="mt-1 text-xs text-muted-foreground">From Wikipedia, the free encyclopedia</p>
+        <p className="mt-1 text-xs text-muted-foreground">{WIKIPEDIA_CHROME[lang].tagline}</p>
       </header>
 
-      <div ref={ref} className="wiki-article mt-4" dangerouslySetInnerHTML={{ __html: html }} />
+      <div
+        ref={ref}
+        lang={lang}
+        className="wiki-article mt-4"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
 
       {/* No link back to wikipedia.org on purpose: that would be a way out of the race. */}
       <footer className="mt-8 border-t border-border pt-3 text-xs leading-relaxed text-muted-foreground">

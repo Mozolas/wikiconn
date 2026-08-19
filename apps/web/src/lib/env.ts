@@ -1,8 +1,6 @@
-function clean(url: string): string {
-  return url.replace(/\/+$/, '');
-}
+import { stripTrailingSlash } from '@/lib/utils';
 
 export const env = {
-  apiUrl: clean(process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001'),
-  socketUrl: clean(process.env['NEXT_PUBLIC_SOCKET_URL'] ?? 'http://localhost:3001'),
+  apiUrl: stripTrailingSlash(process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001'),
+  socketUrl: stripTrailingSlash(process.env['NEXT_PUBLIC_SOCKET_URL'] ?? 'http://localhost:3001'),
 } as const;

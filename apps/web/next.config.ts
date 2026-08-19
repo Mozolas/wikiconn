@@ -1,5 +1,7 @@
 import { fileURLToPath } from 'node:url';
 
+import { DEFAULT_LOCALE } from './src/i18n/config';
+
 import type { NextConfig } from 'next';
 
 // Defense-in-depth headers. A strict script-src CSP is intentionally omitted
@@ -38,6 +40,27 @@ const config: NextConfig = {
   },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
+  },
+  // The routes live under a [lang] segment, but the default locale is served
+  // from the root: the invite links already in circulation point at /room/CODE,
+  // and the home page is already indexed at /. Rewriting keeps those addresses
+  // while the tree underneath stays uniform.
+  async rewrites() {
+    return {
+      beforeFiles: [
+        { source: '/', destination: `/${DEFAULT_LOCALE}` },
+        { source: '/room/:path*', destination: `/${DEFAULT_LOCALE}/room/:path*` },
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
+  // ...which would otherwise leave the same page reachable at two addresses.
+  async redirects() {
+    return [
+      { source: `/${DEFAULT_LOCALE}`, destination: '/', permanent: true },
+      { source: `/${DEFAULT_LOCALE}/:path*`, destination: '/:path*', permanent: true },
+    ];
   },
 };
 
