@@ -4,7 +4,9 @@ import { Flag, MousePointerClick, Target, Timer } from 'lucide-react';
 import { type ReactNode } from 'react';
 
 import { Logo } from '@/components/logo';
+import { useDictionary } from '@/i18n/context';
 import { formatDuration, humanSlug } from '@/lib/format';
+import { site } from '@/lib/site';
 
 interface Props {
   targetSlug: string | undefined;
@@ -27,18 +29,20 @@ export function WikiHeader({
   finished,
   loading,
 }: Props): ReactNode {
+  const { play } = useDictionary();
+
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-card">
       <div className="mx-auto flex h-14 w-full max-w-[100rem] items-center gap-2 px-3 sm:gap-4 sm:px-6">
         <span className="flex items-center gap-2">
           <Logo className="size-7 text-primary" />
-          <span className="hidden font-serif text-base tracking-tight sm:inline">WikiConn</span>
+          <span className="hidden font-serif text-base tracking-tight sm:inline">{site.name}</span>
         </span>
 
         <p className="flex min-w-0 flex-1 items-center gap-2 rounded-sm border border-input bg-background px-3 py-1.5">
           <Target aria-hidden="true" className="size-4 shrink-0 text-primary" />
           <span className="hidden shrink-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:inline">
-            Target
+            {play.target}
           </span>
           <span className="truncate font-serif text-sm sm:text-base">
             {targetSlug === undefined ? '—' : humanSlug(targetSlug)}
@@ -46,19 +50,19 @@ export function WikiHeader({
         </p>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <Stat icon={<Timer aria-hidden="true" className="size-3.5" />} label="Elapsed time">
+          <Stat icon={<Timer aria-hidden="true" className="size-3.5" />} label={play.elapsed}>
             {formatDuration(elapsedMs)}
           </Stat>
           <Stat
             icon={<MousePointerClick aria-hidden="true" className="size-3.5" />}
-            label="Clicks used"
+            label={play.clicksUsed}
           >
             {clickCount}
           </Stat>
           {finished ? (
             <span className="flex items-center gap-1 rounded-sm bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground">
               <Flag aria-hidden="true" className="size-3.5" />
-              <span className="hidden sm:inline">Finished</span>
+              <span className="hidden sm:inline">{play.finished}</span>
             </span>
           ) : null}
         </div>

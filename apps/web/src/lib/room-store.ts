@@ -9,8 +9,11 @@ import {
   type RoomState,
   SOCKET_EVENTS,
 } from '@wikiconn/shared';
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
+
+import { useDictionary } from '@/i18n/context';
+import { describeError } from '@/i18n/error-copy';
 
 import {
   getServerEventSchema,
@@ -86,7 +89,6 @@ class RoomClient {
     });
     this.bind(SOCKET_EVENTS.ERROR, (payload) => {
       this.update((s) => ({ ...s, lastError: payload }));
-      toast.error(payload.message);
     });
 
     socket.on('connect', this.onConnect);
@@ -227,4 +229,24 @@ export function useRoomConnection(input: {
 
 export function getRoomClient(): RoomClient {
   return getClient();
+}
+
+/**
+ * Announces socket errors, in the reader's language. The store cannot do this
+ * itself: it lives outside React and the only thing it has is the server's
+ * English sentence. Each payload is a fresh object, so identity is enough to
+ * tell a new failure from a re-render.
+ */
+export function useRoomErrorToasts(): void {
+  const { errors } = useDictionary();
+  const { lastError } = useRoomStore();
+  // Seeded with what is already there, so moving between the lobby and the
+  // race does not announce a failure the player has already been told about.
+  const announced = useRef<ErrorPayload | null>(lastError);
+
+  useEffect(() => {
+    if (lastError === null || lastError === announced.current) return;
+    announced.current = lastError;
+    toast.error(describeError(errors, lastError).message);
+  }, [errors, lastError]);
 }

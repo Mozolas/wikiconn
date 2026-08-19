@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  type Language,
   MIN_PLAYERS_TO_START,
   type RoomState,
   slugsEqual,
@@ -14,6 +13,7 @@ import { type ReactNode } from 'react';
 import { ArticlePicker } from '@/components/article-picker';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { useDictionary, usePlural } from '@/i18n/context';
 import { humanSlug } from '@/lib/format';
 import { getRoomClient } from '@/lib/room-store';
 import { cn } from '@/lib/utils';
@@ -23,30 +23,15 @@ interface Props {
   selfPlayerId: string;
 }
 
-const LANGUAGE_LABELS: Record<Language, string> = {
-  en: 'English Wikipedia',
-  cs: 'Česká Wikipedie',
-};
-
-const VISIBILITY_ROWS = [
-  {
-    key: 'showCurrentArticle',
-    label: 'Current article',
-    description: 'Everyone sees which article each racer is reading right now.',
-  },
-  {
-    key: 'showClickCount',
-    label: 'Click count',
-    description: 'Everyone sees how many links each racer has followed.',
-  },
-  {
-    key: 'showFullPath',
-    label: 'Live route',
-    description: 'Every hop appears for everyone the moment it happens.',
-  },
-] as const;
+const VISIBILITY_KEYS = [
+  'showCurrentArticle',
+  'showClickCount',
+  'showFullPath',
+] as const satisfies readonly (keyof VisibilitySettings)[];
 
 export function HostSettings({ room, selfPlayerId }: Props): ReactNode {
+  const dict = useDictionary().settings;
+  const pluralize = usePlural();
   const client = getRoomClient();
   const isHost = room.hostPlayerId === selfPlayerId;
   const { lang, startSlug, finishSlug, visibility } = room.settings;
@@ -66,19 +51,14 @@ export function HostSettings({ room, selfPlayerId }: Props): ReactNode {
   const canStart = isHost && bothPicked && !sameArticle && missingPlayers === 0;
 
   let blocker: string | null = null;
-  if (!bothPicked) blocker = 'Pick a start and a finish article.';
-  else if (sameArticle) blocker = 'Start and finish have to be different articles.';
-  else if (missingPlayers > 0) {
-    blocker = `Waiting for ${String(missingPlayers)} more player${missingPlayers === 1 ? '' : 's'}…`;
-  }
+  if (!bothPicked) blocker = dict.blockerPickBoth;
+  else if (sameArticle) blocker = dict.blockerSameArticle;
+  else if (missingPlayers > 0) blocker = pluralize(dict.blockerWaiting, missingPlayers);
 
   return (
     <div className="space-y-6">
       <fieldset disabled={!isHost} className="space-y-2">
-        <legend className="text-sm font-medium">Wikipedia edition</legend>
-        <p className="text-xs text-muted-foreground">
-          Changing this clears both articles — search results differ per language.
-        </p>
+        <legend className="text-sm font-medium">{dict.editionLegend}</legend>
         <div className="flex flex-wrap gap-2 pt-1">
           {SUPPORTED_LANGUAGES.map((code) => (
             <label
@@ -101,7 +81,7 @@ export function HostSettings({ room, selfPlayerId }: Props): ReactNode {
                 }}
                 className="size-4 accent-primary"
               />
-              {LANGUAGE_LABELS[code]}
+              {dict.editionNames[code]}
             </label>
           ))}
         </div>
@@ -111,8 +91,8 @@ export function HostSettings({ room, selfPlayerId }: Props): ReactNode {
         <div className="grid gap-4 md:grid-cols-2">
           <ArticlePicker
             id="start-article"
-            label="Start article"
-            hint="Where every racer begins."
+            label={dict.startLabel}
+            hint={dict.startHint}
             lang={lang}
             value={startSlug}
             disabled={!isHost}
@@ -122,8 +102,8 @@ export function HostSettings({ room, selfPlayerId }: Props): ReactNode {
           />
           <ArticlePicker
             id="finish-article"
-            label="Finish article"
-            hint="First racer to open it wins."
+            label={dict.finishLabel}
+            hint={dict.finishHint}
             lang={lang}
             value={finishSlug}
             disabled={!isHost}
@@ -145,31 +125,31 @@ export function HostSettings({ room, selfPlayerId }: Props): ReactNode {
       </div>
 
       <fieldset disabled={!isHost} className="space-y-2">
-        <legend className="text-sm font-medium">What racers see about each other</legend>
+        <legend className="text-sm font-medium">{dict.visibilityLegend}</legend>
         <div className="space-y-2 pt-1">
-          {VISIBILITY_ROWS.map((row) => (
-            <div
-              key={row.key}
-              className="flex items-center justify-between gap-4 rounded-sm border border-border px-3 py-2"
-            >
-              <div>
-                <p className="text-sm font-medium">{row.label}</p>
-                <p className="text-xs text-muted-foreground">{row.description}</p>
+          {VISIBILITY_KEYS.map((key) => {
+            const row = dict.visibilityRows[key];
+            return (
+              <div
+                key={key}
+                className="flex items-center justify-between gap-4 rounded-sm border border-border px-3 py-2"
+              >
+                <div>
+                  <p className="text-sm font-medium">{row.label}</p>
+                  <p className="text-xs text-muted-foreground">{row.description}</p>
+                </div>
+                <Switch
+                  checked={visibility[key]}
+                  disabled={!isHost}
+                  aria-label={row.label}
+                  onCheckedChange={(checked) => {
+                    toggleVisibility(key, checked);
+                  }}
+                />
               </div>
-              <Switch
-                checked={visibility[row.key]}
-                disabled={!isHost}
-                aria-label={row.label}
-                onCheckedChange={(checked) => {
-                  toggleVisibility(row.key, checked);
-                }}
-              />
-            </div>
-          ))}
+            );
+          })}
         </div>
-        <p className="text-xs text-muted-foreground">
-          When the race ends everyone always sees every route in full — that part is not optional.
-        </p>
       </fieldset>
 
       {isHost ? (
@@ -183,7 +163,7 @@ export function HostSettings({ room, selfPlayerId }: Props): ReactNode {
             className="w-full"
           >
             <Play aria-hidden="true" />
-            Start the race
+            {dict.startRace}
           </Button>
           {blocker === null ? null : (
             <p className="text-center text-xs text-muted-foreground">{blocker}</p>
@@ -192,7 +172,7 @@ export function HostSettings({ room, selfPlayerId }: Props): ReactNode {
       ) : (
         <p className="flex items-center justify-center gap-2 rounded-sm border border-dashed border-border px-3 py-3 text-sm text-muted-foreground">
           <Lock aria-hidden="true" className="size-4" />
-          Only the host can change these. The race starts for everyone at once.
+          {dict.guestNote}
         </p>
       )}
     </div>

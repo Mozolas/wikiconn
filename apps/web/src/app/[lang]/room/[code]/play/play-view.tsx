@@ -15,10 +15,14 @@ import { WikiHeader } from '@/components/game/wiki-header';
 import { SiteShell } from '@/components/site-shell';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
-import { ApiError, fetchArticle } from '@/lib/api';
+import { localePath } from '@/i18n/config';
+import { useDictionary, useLocale } from '@/i18n/context';
+import { describeApiError, describeError } from '@/i18n/error-copy';
+import { format } from '@/i18n/plural';
+import { fetchArticle } from '@/lib/api';
 import { extractToc } from '@/lib/article-toc';
 import { getOrCreatePlayerId, getOrCreatePlayerSecret, getStoredNickname } from '@/lib/identity';
-import { useRoomConnection, useRoomStore } from '@/lib/room-store';
+import { useRoomConnection, useRoomErrorToasts, useRoomStore } from '@/lib/room-store';
 import { useMounted } from '@/lib/use-mounted';
 import { useSettledFlag } from '@/lib/use-settled-flag';
 import { useStopwatch } from '@/lib/use-stopwatch';
@@ -31,6 +35,8 @@ interface Props {
 const RECONNECT_NOTICE_DELAY_MS = 1200;
 
 export function PlayView({ code }: Props): ReactNode {
+  const { play, errors, chrome } = useDictionary();
+  const locale = useLocale();
   const router = useRouter();
   const mounted = useMounted();
   const [playerId] = useState<string>(() => getOrCreatePlayerId());
@@ -42,6 +48,7 @@ export function PlayView({ code }: Props): ReactNode {
 
   const client = useRoomConnection({ code, playerId, playerSecret, nickname });
   const { room, lastWonPayload, lastError, connected } = useRoomStore();
+  useRoomErrorToasts();
 
   const self = room?.players.find((player) => player.playerId === playerId) ?? null;
   const currentSlug = self?.currentSlug ?? null;
@@ -60,12 +67,12 @@ export function PlayView({ code }: Props): ReactNode {
   const resultsOpen = finished && dismissedRound !== round;
 
   useEffect(() => {
-    if (room?.status === 'lobby') router.replace(`/room/${code}`);
-  }, [code, room?.status, router]);
+    if (room?.status === 'lobby') router.replace(localePath(locale, `/room/${code}`));
+  }, [code, locale, room?.status, router]);
 
   useEffect(() => {
-    if (mounted && nickname === null) router.replace(`/room/${code}`);
-  }, [code, mounted, nickname, router]);
+    if (mounted && nickname === null) router.replace(localePath(locale, `/room/${code}`));
+  }, [code, locale, mounted, nickname, router]);
 
   useEffect(() => {
     if (currentSlug === null) return;
@@ -82,12 +89,12 @@ export function PlayView({ code }: Props): ReactNode {
         if (controller.signal.aborted) return;
         if (error instanceof DOMException && error.name === 'AbortError') return;
         setArticleError(true);
-        toast.error(error instanceof ApiError ? error.message : 'Could not load article');
+        toast.error(describeApiError(errors, error, play.articleLoadFailed));
       });
     return () => {
       controller.abort();
     };
-  }, [currentSlug, lang, reloadKey]);
+  }, [currentSlug, errors, lang, reloadKey, play.articleLoadFailed]);
 
   const loadedSlug = article?.slug;
   useEffect(() => {
@@ -122,10 +129,7 @@ export function PlayView({ code }: Props): ReactNode {
     ) {
       return (
         <SiteShell>
-          <FatalNotice
-            title={lastError.code === 'ROOM_NOT_FOUND' ? 'Room not found' : 'Game not running'}
-            message={lastError.message}
-          />
+          <FatalNotice {...describeError(errors, lastError)} />
         </SiteShell>
       );
     }
@@ -133,7 +137,7 @@ export function PlayView({ code }: Props): ReactNode {
       <SiteShell>
         <div className="flex h-72 items-center justify-center gap-2 text-muted-foreground">
           <Loader2 aria-hidden="true" className="size-5 animate-spin" />
-          Joining the race…
+          {play.joining}
         </div>
       </SiteShell>
     );
@@ -167,7 +171,7 @@ export function PlayView({ code }: Props): ReactNode {
           className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-center gap-2 bg-wiki-warning-surface px-4 py-1.5 text-sm text-foreground shadow-lg"
         >
           <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
-          Connection lost — reconnecting…
+          {play.reconnecting}
         </p>
       ) : null}
 
@@ -186,19 +190,19 @@ export function PlayView({ code }: Props): ReactNode {
 
       <div className="mx-auto flex w-full max-w-[100rem] gap-6 px-3 py-5 sm:px-6 lg:gap-8">
         <div className="hidden w-52 shrink-0 xl:block">
-          <ArticleToc entries={toc} />
+          <ArticleToc entries={toc} lang={lang} />
         </div>
 
         <main id="main" className="min-w-0 flex-1">
-          <section aria-label="Racers" className="mb-4 lg:hidden">
+          <section aria-label={play.racersSection} className="mb-4 lg:hidden">
             {racers}
           </section>
 
           {article === null ? (
             articleError ? (
-              <ArticleProblem onRetry={retry} />
+              <ArticleProblem onRetry={retry} message={play.articleFailed} label={play.tryAgain} />
             ) : (
-              <ArticleSkeleton />
+              <ArticleSkeleton label={play.loadingArticle} />
             )
           ) : (
             <>
@@ -206,10 +210,10 @@ export function PlayView({ code }: Props): ReactNode {
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-sm border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm">
                   <span className="flex items-center gap-2">
                     <AlertTriangle aria-hidden="true" className="size-4 text-destructive" />
-                    That article could not be opened — you are still on the previous one.
+                    {play.articleFailedInline}
                   </span>
                   <Button variant="outline" size="sm" onClick={retry}>
-                    Try again
+                    {play.tryAgain}
                   </Button>
                 </div>
               ) : null}
@@ -227,7 +231,7 @@ export function PlayView({ code }: Props): ReactNode {
         <aside className="hidden w-72 shrink-0 space-y-6 lg:block">
           <section>
             <h2 className="border-b border-border pb-1.5 text-sm font-semibold tracking-tight">
-              Racers ({room.players.length})
+              {format(play.racersHeading, { count: room.players.length })}
             </h2>
             <div className="mt-2">{racers}</div>
           </section>
@@ -241,13 +245,13 @@ export function PlayView({ code }: Props): ReactNode {
               }}
             >
               <Trophy aria-hidden="true" />
-              Show results
+              {play.showResults}
             </Button>
           ) : null}
 
           <section>
             <h2 className="border-b border-border pb-1.5 text-sm font-semibold tracking-tight">
-              Appearance
+              {chrome.appearance}
             </h2>
             <div className="mt-2">
               <ThemeToggle />
@@ -260,11 +264,11 @@ export function PlayView({ code }: Props): ReactNode {
             className="w-full text-muted-foreground"
             onClick={() => {
               client.leave(code, playerId);
-              router.push('/');
+              router.push(localePath(locale, '/'));
             }}
           >
             <LogOut aria-hidden="true" />
-            Leave the race
+            {play.leaveRace}
           </Button>
         </aside>
       </div>
@@ -274,12 +278,12 @@ export function PlayView({ code }: Props): ReactNode {
 
 const SKELETON_LINES = ['w-full', 'w-11/12', 'w-full', 'w-4/5', 'w-full', 'w-3/4'] as const;
 
-function ArticleSkeleton(): ReactNode {
+function ArticleSkeleton({ label }: { label: string }): ReactNode {
   return (
     <div
       className="rounded-sm border border-border bg-card px-5 py-6 sm:px-8 sm:py-7"
       aria-busy="true"
-      aria-label="Loading article"
+      aria-label={label}
     >
       <div className="h-8 w-2/3 animate-pulse rounded-sm bg-secondary" />
       <div className="mt-4 space-y-2.5 border-t border-border pt-4">
@@ -295,13 +299,21 @@ function ArticleSkeleton(): ReactNode {
   );
 }
 
-function ArticleProblem({ onRetry }: { onRetry: () => void }): ReactNode {
+function ArticleProblem({
+  onRetry,
+  message,
+  label,
+}: {
+  onRetry: () => void;
+  message: string;
+  label: string;
+}): ReactNode {
   return (
     <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-sm border border-border bg-card text-muted-foreground">
       <AlertTriangle aria-hidden="true" className="size-6 text-destructive" />
-      <p className="text-sm">This article could not be loaded.</p>
+      <p className="text-sm">{message}</p>
       <Button variant="outline" size="sm" onClick={onRetry}>
-        Try again
+        {label}
       </Button>
     </div>
   );

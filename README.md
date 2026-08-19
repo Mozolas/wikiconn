@@ -48,6 +48,25 @@ packages/shared   Zod schemas and the socket contract both ends compile against
 State lives in Dragonfly: a hash per room, a hash of its players, and cached
 article HTML. Rooms expire after 24 hours of silence.
 
+## Languages
+
+The interface comes in English and Czech. English is served from the root and
+Czech from `/cs`, so the URLs that were already shared as invites keep working:
+the routes live under `app/[lang]` and a rewrite maps the unprefixed paths onto
+the English tree.
+
+Every string lives in `apps/web/src/i18n/dictionaries`. The English one is also
+the type the others have to satisfy, so a missing key fails `pnpm check` rather
+than showing up as an English word mid-sentence. Server components read the
+dictionary directly; client components take it from a context whose value the
+layout supplies, which keeps the translations the visitor is not reading out of
+the browser bundle.
+
+Wikipedia's own furniture inside the article — the tagline under the title, the
+contents rail — follows the *article's* language instead, from
+`apps/web/src/lib/wikipedia-chrome.ts`. Someone reading English Wikipedia should
+see the English page whatever the interface is set to.
+
 ## How a race works
 
 The host picks a language, a start and a finish article, and how much players
@@ -74,10 +93,30 @@ Server to client: `room:state`, `room:player-joined`, `room:player-left`,
 `room:settings-updated`, `game:started`, `game:player-moved`, `game:won`,
 `error`.
 
+## Crawlers
+
+`/robots.txt`, `/sitemap.xml` and `/llms.txt` are generated from the route tree,
+the last of those being a plain-language brief for models that read the site to
+answer a question rather than to rank it.
+
+Rooms stay out of the index by carrying `noindex`, not by being disallowed in
+`robots.txt`. The two look interchangeable and are not: a crawler that is not
+allowed to fetch a page never reads the `noindex` on it, so blocking would leave
+a leaked invite eligible to be listed as a bare URL. Letting it be fetched is
+what guarantees it gets dropped.
+
+The home page also emits a schema.org graph — the site, the game, its player
+count and the FAQ — built from the same array the page renders, so the answers a
+crawler reads are the ones on the page.
+
 ## Configuration
 
 Both apps read their settings from env files; see `apps/api/.env.example` and
 `apps/web/.env.example` for the full list and defaults.
+
+`NEXT_PUBLIC_SITE_URL` is the one to get right when deploying somewhere else:
+canonical URLs, the sitemap and the social card are resolved against it, and
+like the other `NEXT_PUBLIC_*` values it is baked in at build time.
 
 ## Deploying
 

@@ -15,6 +15,14 @@ import { env } from './env';
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
+/**
+ * The request never reached a server, so there is no body to read a code out
+ * of. These stand in for one, which is what lets the interface say it in the
+ * player's language instead of repeating the sentence below.
+ */
+export const API_NETWORK_ERROR = 'NETWORK_ERROR';
+export const API_TIMEOUT = 'TIMEOUT';
+
 const createRoomResponseSchema = z.object({
   code: z.string(),
   hostPlayerId: z.string(),
@@ -58,10 +66,14 @@ async function http<T>(path: string, init?: RequestInit, parser?: (raw: unknown)
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === 'TimeoutError') {
-      throw new ApiError({ statusCode: 0, message: 'Request timed out' });
+      throw new ApiError({ statusCode: 0, message: 'Request timed out', code: API_TIMEOUT });
     }
     if (error instanceof DOMException && error.name === 'AbortError') throw error;
-    throw new ApiError({ statusCode: 0, message: 'Network error — is the server reachable?' });
+    throw new ApiError({
+      statusCode: 0,
+      message: 'Network error, the server did not answer',
+      code: API_NETWORK_ERROR,
+    });
   }
 
   const text = await res.text();

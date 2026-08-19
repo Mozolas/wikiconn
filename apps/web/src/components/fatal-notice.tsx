@@ -1,8 +1,12 @@
+'use client';
+
 import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { type ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { localePath } from '@/i18n/config';
+import { useDictionary, useLocale } from '@/i18n/context';
 
 interface Props {
   title: string;
@@ -13,6 +17,9 @@ interface Props {
 
 /** Dead-end screen for the cases a player cannot recover from by waiting. */
 export function FatalNotice({ title, message, action }: Props): ReactNode {
+  const { chrome } = useDictionary();
+  const locale = useLocale();
+
   return (
     <div className="mx-auto max-w-md rounded-md border border-border bg-card p-6 text-center">
       <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
@@ -23,7 +30,7 @@ export function FatalNotice({ title, message, action }: Props): ReactNode {
       <div className="mt-5">
         {action ?? (
           <Button asChild className="w-full">
-            <Link href="/">Back to home</Link>
+            <Link href={localePath(locale, '/')}>{chrome.backToHome}</Link>
           </Button>
         )}
       </div>

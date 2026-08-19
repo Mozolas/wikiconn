@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useDictionary } from '@/i18n/context';
+import { format } from '@/i18n/plural';
 import { fetchRandomArticle, searchWiki } from '@/lib/api';
 import { humanSlug } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -39,6 +41,7 @@ export function ArticlePicker({
   disabled = false,
   onChange,
 }: Props): ReactNode {
+  const dict = useDictionary().picker;
   const listId = useId();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<WikiSearchResult[]>([]);
@@ -114,7 +117,7 @@ export function ArticlePicker({
       })
       .catch(() => {
         setRolling(false);
-        toast.error('Could not draw a random article');
+        toast.error(dict.randomFailed);
       });
   }
 
@@ -181,14 +184,14 @@ export function ArticlePicker({
                 className="size-7"
                 onClick={rollRandom}
                 disabled={rolling}
-                title="Draw another random article"
+                title={dict.randomAnother}
               >
                 {rolling ? (
                   <Loader2 aria-hidden="true" className="animate-spin" />
                 ) : (
                   <Dices aria-hidden="true" />
                 )}
-                <span className="sr-only">Draw another random article</span>
+                <span className="sr-only">{dict.randomAnother}</span>
               </Button>
               <Button
                 type="button"
@@ -198,10 +201,10 @@ export function ArticlePicker({
                 onClick={() => {
                   onChange(null);
                 }}
-                title="Clear"
+                title={dict.clear}
               >
                 <X aria-hidden="true" />
-                <span className="sr-only">Clear {label}</span>
+                <span className="sr-only">{format(dict.clearNamed, { label })}</span>
               </Button>
             </>
           )}
@@ -218,7 +221,7 @@ export function ArticlePicker({
                 id={id}
                 value={query}
                 disabled={disabled}
-                placeholder={`Search ${lang.toUpperCase()} Wikipedia…`}
+                placeholder={format(dict.searchPlaceholder, { lang: lang.toUpperCase() })}
                 className="pl-8"
                 role="combobox"
                 aria-expanded={listOpen}
@@ -251,14 +254,14 @@ export function ArticlePicker({
               size="icon"
               disabled={disabled || rolling}
               onClick={rollRandom}
-              title="Random article"
+              title={dict.random}
             >
               {rolling ? (
                 <Loader2 aria-hidden="true" className="animate-spin" />
               ) : (
                 <Dices aria-hidden="true" />
               )}
-              <span className="sr-only">Pick a random article</span>
+              <span className="sr-only">{dict.randomPick}</span>
             </Button>
           </div>
 
@@ -266,7 +269,7 @@ export function ArticlePicker({
             <ul
               id={listId}
               role="listbox"
-              aria-label={`${label} suggestions`}
+              aria-label={format(dict.suggestions, { label })}
               className="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded-sm border border-border bg-popover shadow-md"
             >
               {options.map((row, index) => (
@@ -302,7 +305,7 @@ export function ArticlePicker({
 
           {listOpen && !searching && options.length === 0 ? (
             <p className="absolute z-20 mt-1 w-full rounded-sm border border-border bg-popover px-3 py-2 text-sm text-muted-foreground shadow-md">
-              Nothing found for “{trimmed}”.
+              {format(dict.nothingFound, { query: trimmed })}
             </p>
           ) : null}
         </>

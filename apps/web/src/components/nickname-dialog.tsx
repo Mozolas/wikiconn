@@ -14,6 +14,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useDictionary } from '@/i18n/context';
+import { format } from '@/i18n/plural';
 
 interface Props {
   open: boolean;
@@ -22,6 +24,7 @@ interface Props {
 }
 
 export function NicknameDialog({ open, defaultNickname = '', onSubmit }: Props): ReactNode {
+  const dict = useDictionary().nickname;
   const [nickname, setNickname] = useState(defaultNickname);
   const trimmed = nickname.trim();
   const valid = isValidNickname(trimmed);
@@ -44,33 +47,30 @@ export function NicknameDialog({ open, defaultNickname = '', onSubmit }: Props):
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <DialogHeader>
-            <DialogTitle className="font-serif text-xl">What should we call you?</DialogTitle>
-            <DialogDescription>
-              This is the name the other racers see. It is kept in this browser only — no account,
-              no email.
-            </DialogDescription>
+            <DialogTitle className="font-serif text-xl">{dict.title}</DialogTitle>
+            <DialogDescription>{dict.description}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-1.5">
-            <Label htmlFor="nickname">Nickname</Label>
+            <Label htmlFor="nickname">{dict.label}</Label>
             <Input
               id="nickname"
               value={nickname}
               autoComplete="nickname"
               maxLength={NICKNAME_MAX_LENGTH}
-              placeholder="Ada"
+              placeholder={dict.placeholder}
               onChange={(event) => {
                 setNickname(event.target.value);
               }}
             />
             <p className="text-xs text-muted-foreground">
-              {NICKNAME_MIN_LENGTH}–{NICKNAME_MAX_LENGTH} characters.
+              {format(dict.hint, { min: NICKNAME_MIN_LENGTH, max: NICKNAME_MAX_LENGTH })}
             </p>
           </div>
 
           <DialogFooter>
             <Button type="submit" disabled={!valid} className="w-full sm:w-auto">
-              Enter the room
+              {dict.submit}
             </Button>
           </DialogFooter>
         </form>

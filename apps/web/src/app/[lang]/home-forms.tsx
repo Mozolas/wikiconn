@@ -9,7 +9,10 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ApiError, createRoom } from '@/lib/api';
+import { localePath } from '@/i18n/config';
+import { useDictionary, useLocale } from '@/i18n/context';
+import { describeApiError } from '@/i18n/error-copy';
+import { createRoom } from '@/lib/api';
 import { getOrCreatePlayerId } from '@/lib/identity';
 
 /** Typed input is filtered to the code alphabet; pasted links are kept intact for parsing. */
@@ -20,6 +23,9 @@ function normalizeCodeInput(raw: string): string {
 }
 
 export function HomeForms(): ReactNode {
+  const { home, errors } = useDictionary();
+  const { create, join } = home;
+  const locale = useLocale();
   const router = useRouter();
   const inputId = useId();
   const errorId = useId();
@@ -32,11 +38,11 @@ export function HomeForms(): ReactNode {
     setCreating(true);
     createRoom({ hostPlayerId: getOrCreatePlayerId(), lang: 'en' })
       .then((result) => {
-        router.push(`/room/${result.code}`);
+        router.push(localePath(locale, `/room/${result.code}`));
         return result;
       })
       .catch((error: unknown) => {
-        toast.error(error instanceof ApiError ? error.message : 'Could not create room');
+        toast.error(describeApiError(errors, error, create.failed));
         setCreating(false);
       });
   }
@@ -45,39 +51,34 @@ export function HomeForms(): ReactNode {
     event.preventDefault();
     const code = extractRoomCode(joinInput);
     if (code === null) {
-      setJoinError('That is not a valid code. Six characters, letters A–Z and digits 2–9.');
+      setJoinError(join.invalid);
       return;
     }
     setJoinError(null);
-    router.push(`/room/${code}`);
+    router.push(localePath(locale, `/room/${code}`));
   }
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <section className="flex flex-col rounded-md border border-border bg-card p-5">
-        <h2 className="font-serif text-xl tracking-tight">Start a new race</h2>
-        <p className="mt-1 flex-1 text-sm leading-relaxed text-muted-foreground">
-          You become the host: you choose the language, the two articles and what everyone can see
-          about each other mid-race.
-        </p>
+        <h2 className="font-serif text-xl tracking-tight">{create.heading}</h2>
+        <p className="mt-1 flex-1 text-sm leading-relaxed text-muted-foreground">{create.body}</p>
         <Button onClick={onCreate} disabled={creating} size="lg" className="mt-4 w-full">
           {creating ? (
             <Loader2 aria-hidden="true" className="animate-spin" />
           ) : (
             <Plus aria-hidden="true" />
           )}
-          {creating ? 'Creating room…' : 'Create room'}
+          {creating ? create.busy : create.button}
         </Button>
       </section>
 
       <section className="flex flex-col rounded-md border border-border bg-card p-5">
-        <h2 className="font-serif text-xl tracking-tight">Join a friend</h2>
-        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-          Paste the code you were given — or the whole invite link.
-        </p>
+        <h2 className="font-serif text-xl tracking-tight">{join.heading}</h2>
+        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{join.body}</p>
         <form onSubmit={onJoin} className="mt-4 flex flex-1 flex-col justify-end gap-2">
           <Label htmlFor={inputId} className="sr-only">
-            Room code
+            {join.label}
           </Label>
           <div className="flex gap-2">
             <Input
@@ -87,7 +88,7 @@ export function HomeForms(): ReactNode {
                 setJoinInput(normalizeCodeInput(event.target.value));
                 setJoinError(null);
               }}
-              placeholder="ABCDEF"
+              placeholder={join.placeholder}
               autoCapitalize="characters"
               autoComplete="off"
               spellCheck={false}
@@ -96,7 +97,7 @@ export function HomeForms(): ReactNode {
               className="h-11 font-mono text-base uppercase tracking-[0.3em] placeholder:tracking-[0.3em]"
             />
             <Button type="submit" variant="secondary" size="lg" className="shrink-0">
-              Join
+              {join.submit}
               <ArrowRight aria-hidden="true" />
             </Button>
           </div>
