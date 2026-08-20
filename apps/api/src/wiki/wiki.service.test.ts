@@ -4,12 +4,13 @@ import { WikiService } from './wiki.service.js';
 
 type Ctor = ConstructorParameters<typeof WikiService>;
 
-/** `random` needs neither cache nor sanitizer, only the configured user agent. */
+/** `random` needs no cache, only the configured user agent. */
 function createService(): WikiService {
   return new WikiService(
     {} as unknown as Ctor[0],
-    {} as unknown as Ctor[1],
-    { wikiUserAgent: 'WikiConn/test' } as unknown as Ctor[2],
+    {
+      wikiUserAgent: 'WikiConn/test',
+    } as unknown as Ctor[1],
   );
 }
 

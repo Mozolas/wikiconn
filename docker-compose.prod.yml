@@ -34,7 +34,8 @@ services:
       PORT: '3001'
       REDIS_URL: redis://dragonfly:6379
       CORS_ORIGIN: https://${WIKICONN_DOMAIN}
-      WIKI_CACHE_TTL_SECONDS: '3600'
+      # Caddy is the only hop in front of this container.
+      TRUST_PROXY_HOPS: '1'
       WIKI_SEARCH_CACHE_TTL_SECONDS: '300'
       # Wikimedia's policy asks automated clients to identify themselves and to
       # provide a way of reaching the operator.

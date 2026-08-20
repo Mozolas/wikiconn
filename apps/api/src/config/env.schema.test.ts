@@ -8,15 +8,21 @@ describe('envSchema', () => {
     expect(parsed.PORT).toBe(3001);
     expect(parsed.REDIS_URL).toBe('redis://localhost:6380');
     expect(parsed.CORS_ORIGIN).toBe('http://localhost:3000');
-    expect(parsed.WIKI_CACHE_TTL_SECONDS).toBe(3600);
+    expect(parsed.TRUST_PROXY_HOPS).toBe(0);
+    expect(parsed.WIKI_SEARCH_CACHE_TTL_SECONDS).toBe(300);
     expect(parsed.LOG_LEVEL).toBe('log');
     expect(parsed.NODE_ENV).toBe('development');
   });
 
   it('coerces numeric strings', () => {
-    const parsed = envSchema.parse({ PORT: '4000', WIKI_CACHE_TTL_SECONDS: '7200' });
+    const parsed = envSchema.parse({ PORT: '4000', WIKI_SEARCH_CACHE_TTL_SECONDS: '7200' });
     expect(parsed.PORT).toBe(4000);
-    expect(parsed.WIKI_CACHE_TTL_SECONDS).toBe(7200);
+    expect(parsed.WIKI_SEARCH_CACHE_TTL_SECONDS).toBe(7200);
+  });
+
+  it('rejects a negative proxy hop count', () => {
+    expect(envSchema.safeParse({ TRUST_PROXY_HOPS: '-1' }).success).toBe(false);
+    expect(envSchema.parse({ TRUST_PROXY_HOPS: '1' }).TRUST_PROXY_HOPS).toBe(1);
   });
 
   it('rejects non-positive PORT', () => {

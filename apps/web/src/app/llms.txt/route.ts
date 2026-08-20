@@ -18,17 +18,17 @@ const LLMS_TXT = `# ${site.name}
 
 The host opens a room, picks a Wikipedia language, a starting article and a
 target article, then shares a six-character code. Everyone loads the same
-starting article at the same moment. A move is legal only if the link was
-actually present on the article the player was standing on, which the server
-verifies before broadcasting it. The first player to reach the target ends the
+starting article at the same moment, and the only way onward is a link inside
+the article in front of you. The first player to reach the target ends the
 race for everyone, and the result screen reveals every player's full route,
 click count and time regardless of what they could see during the race.
 
 The host also decides how much rivals reveal about each other mid-race: current
 article, click count and full path are three independent switches.
 
-Articles are fetched live from Wikipedia, stripped of scripts and external
-links, and rendered in a copy of the Vector 2022 skin. English and Czech
+Articles are fetched live from Wikipedia by the player's own browser, stripped
+there of scripts and external links, and rendered in a copy of the Vector 2022
+skin. English and Czech
 Wikipedia are supported, and the interface itself is available in both
 languages.
 

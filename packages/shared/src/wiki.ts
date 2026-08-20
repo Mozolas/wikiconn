@@ -28,13 +28,3 @@ export const wikiRandomResponseSchema = z.object({
 });
 
 export type WikiRandomResponse = z.infer<typeof wikiRandomResponseSchema>;
-
-export const wikiArticleResponseSchema = z.object({
-  lang: languageSchema,
-  slug: slugSchema,
-  title: z.string(),
-  html: z.string(),
-  cached: z.boolean(),
-});
-
-export type WikiArticleResponse = z.infer<typeof wikiArticleResponseSchema>;

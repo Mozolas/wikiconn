@@ -4,9 +4,9 @@ Multiplayer Wikipedia race. Everyone starts on the same article and clicks
 links to reach a target one. First to arrive wins. Two to five players per
 room, no accounts.
 
-Articles are fetched from Wikipedia, sanitized on the server and rendered in a
-copy of the Vector 2022 skin, so the page you race through looks like the real
-thing. Without the search box, obviously.
+Articles are fetched from Wikipedia by your own browser, sanitized there and
+rendered in a copy of the Vector 2022 skin, so the page you race through looks
+like the real thing. Without the search box, obviously.
 
 ![Racing through Albert Einstein towards Pizza: contents rail on the left, target and timer in the header, rivals on the right](docs/race.png)
 
@@ -40,13 +40,13 @@ collide with a Redis you already have running.
 ## Layout
 
 ```
-apps/api          NestJS: Wikipedia proxy, Socket.IO gateway, game rules
+apps/api          NestJS: Socket.IO gateway, game rules, article search
 apps/web          Next.js App Router client
 packages/shared   Zod schemas and the socket contract both ends compile against
 ```
 
 State lives in Dragonfly: a hash per room, a hash of its players, and cached
-article HTML. Rooms expire after 24 hours of silence.
+search results. Rooms expire after 24 hours of silence.
 
 ## Languages
 
@@ -70,16 +70,29 @@ see the English page whatever the interface is set to.
 ## How a race works
 
 The host picks a language, a start and a finish article, and how much players
-see about each other while racing. On start, every client loads the start
-article from `GET /wiki/:lang/:slug`. That HTML arrives with scripts, inline
-handlers and external links stripped, and with internal links rewritten to
-carry `data-wiki-slug`.
+see about each other while racing. On start, every client fetches the start
+article straight from Wikipedia's REST API and sanitizes it in the browser:
+scripts, inline handlers and external links are stripped, and internal links
+are rewritten to carry `data-wiki-slug`.
 
 The client intercepts clicks on those links and emits `player:navigate`. The
-server checks the target really is a link on the article the player is standing
-on, records the move and broadcasts it, filtered by the host's visibility
+server records the move and broadcasts it, filtered by the host's visibility
 settings. Reaching the finish ends the race for everyone, and the result screen
 always reveals every player's full route regardless of those settings.
+
+Article HTML never passes through the API. It used to: the server pulled about
+1.5 MB of Parsoid HTML per distinct article and shipped roughly 1.1 MB of it to
+each player on every hop, and since a race starts with everyone on the same
+article, an uncached start meant one upstream fetch per player at the same
+instant. Fetching in the browser removes all of that and spreads what remains
+over the players' own addresses rather than one datacenter address. To be clear
+about what this is not: the REST API documents a ceiling of 200 requests per
+second, which a race was never remotely close to. The reason is the bytes and
+the server's part in moving them, not a limit being approached.
+
+The cost is that `apps/web/src/lib/wiki-sanitizer.ts` runs in the browser, which
+makes it the only thing standing between a wiki edit and the DOM. It identifies
+itself with `Api-User-Agent`, since a browser cannot set `User-Agent`.
 
 ## Socket events
 
@@ -125,7 +138,12 @@ and rolls the stack on the server over SSH. That is all of
 `.github/workflows/deploy.yml`; the server needs nothing but Docker.
 
 Caddy terminates TLS and keeps everything on one origin: `/socket.io/*` and
-`/api/*` go to the API, the rest to Next. Since `NEXT_PUBLIC_*` is baked into
+`/api/*` go to the API, the rest to Next. Because the API only ever sees Caddy's
+address, `TRUST_PROXY_HOPS` tells it how far into `X-Forwarded-For` to look for
+the real client; it is a property of the topology, so a deployment that adds
+another proxy in front has to raise it, and one that removes Caddy has to drop
+it back to 0. Too low and every caller shares one rate-limit bucket, too high
+and a caller can forge the header to escape the limit. Since `NEXT_PUBLIC_*` is baked into
 the client bundle at build time, changing the domain means rebuilding the web
 image rather than editing an env file — the workflow passes it as a build arg.
 

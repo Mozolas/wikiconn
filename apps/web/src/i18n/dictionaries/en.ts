@@ -113,7 +113,7 @@ export const en = {
         {
           question: 'What stops someone from just searching for the target?',
           answer:
-            'The page arrives without a search box, and the server checks every move against the article you were standing on. A link that was not there does not count. Middle-clicking out to a new tab does not work either.',
+            'The page arrives without a search box, so the only way onward is a link on the article in front of you. Middle-clicking out to a new tab does not work either. Past that it runs on trust: this is a game between friends, not a tournament.',
         },
         {
           question: 'Can players see where their rivals are?',

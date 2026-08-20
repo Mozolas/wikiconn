@@ -1,6 +1,5 @@
 'use client';
 
-import { type WikiArticleResponse } from '@wikiconn/shared';
 import { AlertTriangle, Loader2, LogOut, Trophy } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
@@ -19,13 +18,13 @@ import { localePath } from '@/i18n/config';
 import { useDictionary, useLocale } from '@/i18n/context';
 import { describeApiError, describeError } from '@/i18n/error-copy';
 import { format } from '@/i18n/plural';
-import { fetchArticle } from '@/lib/api';
 import { extractToc } from '@/lib/article-toc';
 import { getOrCreatePlayerId, getOrCreatePlayerSecret, getStoredNickname } from '@/lib/identity';
 import { useRoomConnection, useRoomErrorToasts, useRoomStore } from '@/lib/room-store';
 import { useMounted } from '@/lib/use-mounted';
 import { useSettledFlag } from '@/lib/use-settled-flag';
 import { useStopwatch } from '@/lib/use-stopwatch';
+import { type Article, fetchArticle } from '@/lib/wikipedia';
 
 interface Props {
   code: string;
@@ -56,7 +55,7 @@ export function PlayView({ code }: Props): ReactNode {
   const finishSlug = room?.settings.finishSlug;
   const elapsed = useStopwatch(room?.startedAt, room?.status === 'playing');
 
-  const [article, setArticle] = useState<WikiArticleResponse | null>(null);
+  const [article, setArticle] = useState<Article | null>(null);
   const [articleError, setArticleError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   // Which round's results the player has closed; `null` means "show them again".
