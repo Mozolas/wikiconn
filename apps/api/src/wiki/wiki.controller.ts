@@ -1,6 +1,6 @@
-import { Controller, Get, Param, Query, UsePipes } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { type Language, languageSchema, slugSchema } from '@wikiconn/shared';
+import { type Language, languageSchema } from '@wikiconn/shared';
 
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe.js';
 
@@ -25,14 +25,5 @@ export class WikiController {
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   async random(@Param('lang', new ZodValidationPipe(languageSchema)) lang: Language) {
     return this.wiki.random(lang);
-  }
-
-  @Get(':lang/:slug')
-  @UsePipes()
-  async getArticle(
-    @Param('lang', new ZodValidationPipe(languageSchema)) lang: Language,
-    @Param('slug', new ZodValidationPipe(slugSchema)) slug: string,
-  ) {
-    return this.wiki.getArticle(lang, slug);
   }
 }

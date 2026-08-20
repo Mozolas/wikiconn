@@ -18,8 +18,9 @@ interface Props {
 }
 
 /**
- * Renders one server-sanitized Wikipedia article (HTML produced by WikiSanitizer
- * in apps/api) with Wikipedia's own page furniture around it.
+ * Renders one sanitized Wikipedia article (HTML produced by sanitizeArticle in
+ * lib/wiki-sanitizer, in this same browser) with Wikipedia's own page furniture
+ * around it.
  *
  * Internal article links carry data-wiki-slug; we delegate-listen for clicks on
  * them and report the target instead of navigating. The handler is bound once

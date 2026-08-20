@@ -2,8 +2,6 @@ import {
   type Language,
   type RoomState,
   roomStateSchema,
-  type WikiArticleResponse,
-  wikiArticleResponseSchema,
   type WikiRandomResponse,
   wikiRandomResponseSchema,
   type WikiSearchResult,
@@ -130,15 +128,5 @@ export function fetchRandomArticle(
 ): Promise<WikiRandomResponse> {
   return http(`/wiki/${lang}/random`, signal ? { signal } : undefined, (raw) =>
     wikiRandomResponseSchema.parse(raw),
-  );
-}
-
-export function fetchArticle(
-  lang: Language,
-  slug: string,
-  signal?: AbortSignal,
-): Promise<WikiArticleResponse> {
-  return http(`/wiki/${lang}/${encodeURIComponent(slug)}`, signal ? { signal } : undefined, (raw) =>
-    wikiArticleResponseSchema.parse(raw),
   );
 }

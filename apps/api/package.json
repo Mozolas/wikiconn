@@ -26,7 +26,6 @@
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/websockets": "^11.1.23",
     "@wikiconn/shared": "workspace:*",
-    "cheerio": "^1.2.0",
     "helmet": "^8.2.0",
     "ioredis": "^5.10.1",
     "reflect-metadata": "^0.2.2",

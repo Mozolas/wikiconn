@@ -161,32 +161,21 @@ class FakeRoomRepository {
   }
 }
 
-class FakeWikiService {
-  links = new Set<string>(['Isaac_Newton', 'Physics', 'Mathematics']);
-
-  getArticleLinks(): Promise<Set<string>> {
-    return Promise.resolve(this.links);
-  }
-}
-
 const hostId = '550e8400-e29b-41d4-a716-446655440000';
 const guestId = '550e8400-e29b-41d4-a716-446655440001';
 const SECRET = 'unit-test-secret-value';
 
 async function makeReadyRoom(): Promise<{
   repo: FakeRoomRepository;
-  wiki: FakeWikiService;
   rooms: RoomService;
   game: GameService;
   code: string;
 }> {
   const repo = new FakeRoomRepository();
-  const wiki = new FakeWikiService();
   const rooms = new RoomService(repo as unknown as ConstructorParameters<typeof RoomService>[0]);
   const game = new GameService(
     rooms,
     repo as unknown as ConstructorParameters<typeof GameService>[1],
-    wiki as unknown as ConstructorParameters<typeof GameService>[2],
   );
 
   const { code } = await rooms.createRoom(hostId, 'en');
@@ -197,7 +186,7 @@ async function makeReadyRoom(): Promise<{
     finishSlug: 'Isaac_Newton',
   });
 
-  return { repo, wiki, rooms, game, code };
+  return { repo, rooms, game, code };
 }
 
 describe('GameService.startGame', () => {
@@ -223,12 +212,10 @@ describe('GameService.startGame', () => {
 
   it('refuses to start without start/finish set', async () => {
     const repo = new FakeRoomRepository();
-    const wiki = new FakeWikiService();
     const rooms = new RoomService(repo as unknown as ConstructorParameters<typeof RoomService>[0]);
     const game = new GameService(
       rooms,
       repo as unknown as ConstructorParameters<typeof GameService>[1],
-      wiki as unknown as ConstructorParameters<typeof GameService>[2],
     );
     const { code } = await rooms.createRoom(hostId);
     await rooms.joinRoom({ code, playerId: hostId, playerSecret: SECRET, nickname: 'host' });
@@ -249,14 +236,6 @@ describe('GameService.navigate', () => {
     await expect(
       game.navigate(code, hostId, 'Albert_Einstein', 'Isaac_Newton'),
     ).rejects.toMatchObject({ code: 'GAME_NOT_RUNNING' });
-  });
-
-  it('rejects navigating to an article that is not a link on the current page', async () => {
-    const { game, code } = await makeReadyRoom();
-    await game.startGame(code, hostId);
-    await expect(game.navigate(code, hostId, 'Albert_Einstein', 'Moon')).rejects.toMatchObject({
-      code: 'INVALID_NAVIGATION',
-    });
   });
 
   it('rejects when fromSlug does not match player current slug', async () => {

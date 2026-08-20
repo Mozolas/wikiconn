@@ -14,7 +14,6 @@ import {
 import { WsAppError } from '../room/room.errors.js';
 import { RoomRepository } from '../room/room.repository.js';
 import { RoomService } from '../room/room.service.js';
-import { WikiService } from '../wiki/wiki.service.js';
 
 export interface MoveResult {
   state: RoomState;
@@ -38,7 +37,6 @@ export class GameService {
   constructor(
     private readonly rooms: RoomService,
     private readonly repo: RoomRepository,
-    private readonly wiki: WikiService,
   ) {}
 
   async startGame(code: string, requesterId: string): Promise<StartResult> {
@@ -108,19 +106,6 @@ export class GameService {
   ): Promise<MoveResult> {
     const fromSlug = parseSlug(fromSlugRaw);
     const toSlug = parseSlug(toSlugRaw);
-
-    // Pre-check + reachability validation run OUTSIDE the room lock: the wiki
-    // fetch must not be held under the lock, and these are read-only checks.
-    const pre = await this.rooms.loadState(code);
-    if (pre.status !== 'playing') {
-      throw new WsAppError('GAME_NOT_RUNNING', 'Game is not running');
-    }
-
-    // Anti-cheat: the target must actually be a link on the current article.
-    const links = await this.wiki.getArticleLinks(pre.settings.lang, fromSlug);
-    if (!links.has(toSlug)) {
-      throw new WsAppError('INVALID_NAVIGATION', `${toSlug} is not a link on ${fromSlug}`);
-    }
 
     return this.repo.withLock(code, async () => {
       const state = await this.rooms.loadState(code);

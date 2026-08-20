@@ -19,8 +19,8 @@ export class AppConfig {
     return this.config.get('CORS_ORIGIN', { infer: true });
   }
 
-  get wikiCacheTtlSeconds(): number {
-    return this.config.get('WIKI_CACHE_TTL_SECONDS', { infer: true });
+  get trustProxyHops(): number {
+    return this.config.get('TRUST_PROXY_HOPS', { infer: true });
   }
 
   get wikiSearchCacheTtlSeconds(): number {

@@ -4,9 +4,10 @@ import { DEFAULT_LOCALE } from './src/i18n/config';
 
 import type { NextConfig } from 'next';
 
-// Defense-in-depth headers. A strict script-src CSP is intentionally omitted
-// because it requires per-request nonces via middleware in the App Router;
-// the rendered article HTML is already allowlist-sanitized server-side.
+// Defense-in-depth headers. A strict script-src CSP is still omitted because it
+// requires per-request nonces via middleware in the App Router. Note the article
+// HTML is now sanitized in the browser rather than on a server, so the allowlist
+// in lib/wiki-sanitizer is the whole defence rather than the second of two.
 const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'DENY' },

@@ -26,6 +26,18 @@ async function bootstrap(): Promise<void> {
   const config = app.get(AppConfig);
   app.useLogger(LOG_LEVELS[config.logLevel]);
 
+  // Must precede the throttler guard's first request: without it Express reports
+  // the proxy's own address as req.ip and every caller lands in one shared bucket.
+  if (config.trustProxyHops > 0) app.set('trust proxy', config.trustProxyHops);
+  else if (config.nodeEnv === 'production') {
+    // Nothing downstream fails, which is the problem: rate limiting quietly
+    // degrades to one bucket for the entire deployment.
+    new Logger('Bootstrap').warn(
+      'TRUST_PROXY_HOPS is 0 in production. If anything proxies this process, ' +
+        'every client shares one rate-limit bucket. Set it to the number of hops.',
+    );
+  }
+
   app.use(helmet());
   app.useBodyParser('json', { limit: '32kb' });
 

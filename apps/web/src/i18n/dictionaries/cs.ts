@@ -118,7 +118,7 @@ export const cs: Dictionary = {
         {
           question: 'Co brání tomu, aby si někdo cíl prostě vyhledal?',
           answer:
-            'Článek dostaneš bez vyhledávacího pole a server u každého tahu ověří, že odkaz na stránce, ze které jsi klikl, opravdu byl. Když tam nebyl, tah neplatí. Otevřít si článek kolečkem v nové záložce taky nejde.',
+            'Článek dostaneš bez vyhledávacího pole, takže jediná cesta dál je odkaz na stránce, kterou máš před sebou. Otevřít si článek kolečkem v nové záložce taky nejde. Dál už se spoléhá na férovost, je to hra mezi kamarády, ne turnaj.',
         },
         {
           question: 'Vidí hráči, kde jsou soupeři?',
