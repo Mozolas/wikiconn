@@ -39,18 +39,18 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/canvas-confetti": "^1.9.0",
-    "@types/node": "^25.9.1",
+    "@types/node": "^26.2.0",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.2",
+    "@vitejs/plugin-react": "^6.0.5",
     "@wikiconn/eslint-config": "workspace:*",
     "@wikiconn/tsconfig": "workspace:*",
-    "eslint": "^9.39.4",
-    "eslint-config-next": "^16.2.6",
+    "eslint": "^10.8.1",
+    "eslint-config-next": "^16.3.1",
     "jsdom": "^29.1.1",
     "postcss": "^8.5.15",
     "tailwindcss": "^4.3.0",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.7"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   }
 }
