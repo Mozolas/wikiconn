@@ -18,24 +18,24 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@nestjs/common": "^11.1.23",
-    "@nestjs/config": "^4.0.4",
-    "@nestjs/core": "^11.1.23",
-    "@nestjs/platform-express": "^11.1.23",
-    "@nestjs/platform-socket.io": "^11.1.23",
+    "@nestjs/common": "^12.0.1",
+    "@nestjs/config": "^12.0.0",
+    "@nestjs/core": "^12.0.1",
+    "@nestjs/platform-express": "^12.0.1",
+    "@nestjs/platform-socket.io": "^12.0.1",
     "@nestjs/throttler": "^6.5.0",
-    "@nestjs/websockets": "^11.1.23",
+    "@nestjs/websockets": "^12.0.1",
     "@wikiconn/shared": "workspace:*",
-    "helmet": "^8.2.0",
-    "ioredis": "^5.10.1",
+    "helmet": "^8.3.0",
+    "ioredis": "^6.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "socket.io": "^4.8.3",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
-    "@nestjs/cli": "^11.0.21",
-    "@nestjs/testing": "^11.1.23",
+    "@nestjs/cli": "^12.0.0",
+    "@nestjs/testing": "^12.0.1",
     "@types/node": "^25.9.1",
     "@types/supertest": "^7.2.0",
     "@wikiconn/eslint-config": "workspace:*",
@@ -44,7 +44,7 @@
     "source-map-support": "^0.5.21",
     "supertest": "^7.2.2",
     "typescript": "^6.0.3",
-    "unplugin-swc": "^1.5.9",
+    "unplugin-swc": "^1.5.11",
     "vitest": "^4.1.7"
   }
 }
