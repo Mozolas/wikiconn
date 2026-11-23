@@ -120,9 +120,12 @@ jobs:
           SSH="ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes"
           SCP="scp -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes"
 
-          $SSH "$SSH_USER@$SSH_HOST" 'mkdir -p wikiconn'
+          # The shared edge Caddy (Mozolas/vibek deploy/edge/) serves one site file per project.
+          sed "s/__WIKICONN_DOMAIN__/$DOMAIN/g" deploy/wikiconn.caddy > wikiconn.caddy
+
+          $SSH "$SSH_USER@$SSH_HOST" 'mkdir -p wikiconn edge/config/sites'
           $SCP docker-compose.prod.yml "$SSH_USER@$SSH_HOST:wikiconn/docker-compose.yml"
-          $SCP deploy/Caddyfile "$SSH_USER@$SSH_HOST:wikiconn/Caddyfile"
+          $SCP wikiconn.caddy "$SSH_USER@$SSH_HOST:edge/config/sites/wikiconn.caddy.next"
 
           $SSH "$SSH_USER@$SSH_HOST" \
             REGISTRY_TOKEN="$REGISTRY_TOKEN" \
@@ -140,11 +143,27 @@ jobs:
           API_IMAGE=$IMAGE_BASE-api:$IMAGE_TAG
           ENV
 
+          docker network inspect edge >/dev/null 2>&1 || docker network create edge
           echo "$REGISTRY_TOKEN" | docker login ghcr.io -u "$REGISTRY_USER" --password-stdin
           docker compose pull
           docker compose up -d --remove-orphans
           docker logout ghcr.io
           docker image prune -f
+          rm -f Caddyfile
+
+          if ! docker inspect -f '{{.State.Running}}' edge-caddy 2>/dev/null | grep -q true; then
+            echo "edge-caddy is not running; bootstrap it first (Mozolas/vibek docs/deploy.md)" >&2
+            exit 1
+          fi
+          sites=~/edge/config/sites
+          [ -f "$sites/wikiconn.caddy" ] && cp "$sites/wikiconn.caddy" "$sites/wikiconn.caddy.prev"
+          mv "$sites/wikiconn.caddy.next" "$sites/wikiconn.caddy"
+          if ! docker exec edge-caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile; then
+            if [ -f "$sites/wikiconn.caddy.prev" ]; then mv "$sites/wikiconn.caddy.prev" "$sites/wikiconn.caddy"; else rm "$sites/wikiconn.caddy"; fi
+            exit 1
+          fi
+          rm -f "$sites/wikiconn.caddy.prev"
+          docker exec edge-caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
           REMOTE
 
       - name: Wait for the site to answer

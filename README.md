@@ -137,7 +137,14 @@ Every merge to `main` runs the checks, builds both images, pushes them to GHCR
 and rolls the stack on the server over SSH. That is all of
 `.github/workflows/deploy.yml`; the server needs nothing but Docker.
 
-Caddy terminates TLS and keeps everything on one origin: `/socket.io/*` and
+TLS is terminated by the server's shared `edge` Caddy, which also fronts other
+projects on the same host. Its stack lives in
+[Mozolas/vibek `deploy/edge/`](https://github.com/Mozolas/vibek/tree/main/deploy/edge);
+this repo only ships its site file, `deploy/wikiconn.caddy`, to
+`~/edge/config/sites/` and reloads Caddy. `web` and `api` join the external `edge`
+network as `wikiconn-web` / `wikiconn-api`.
+
+Caddy keeps everything on one origin: `/socket.io/*` and
 `/api/*` go to the API, the rest to Next. Because the API only ever sees Caddy's
 address, `TRUST_PROXY_HOPS` tells it how far into `X-Forwarded-For` to look for
 the real client; it is a property of the topology, so a deployment that adds
