@@ -1,24 +1,10 @@
 # Production stack. Deployed to the server by .github/workflows/deploy.yml,
 # which writes the accompanying .env with the image tags to run.
+# HTTPS is terminated by the shared `edge` Caddy on the server (defined in Mozolas/vibek,
+# deploy/edge/); web and api join its external network under wikiconn-prefixed aliases.
 name: wikiconn
 
 services:
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - '80:80'
-      - '443:443'
-    environment:
-      WIKICONN_DOMAIN: ${WIKICONN_DOMAIN:?set WIKICONN_DOMAIN}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    depends_on:
-      - web
-      - api
-
   web:
     image: ${WEB_IMAGE:?set WEB_IMAGE}
     restart: unless-stopped
@@ -26,6 +12,10 @@ services:
       NODE_ENV: production
     expose:
       - '3000'
+    networks:
+      default:
+      edge:
+        aliases: [wikiconn-web]
 
   api:
     image: ${API_IMAGE:?set API_IMAGE}
@@ -34,7 +24,7 @@ services:
       PORT: '3001'
       REDIS_URL: redis://dragonfly:6379
       CORS_ORIGIN: https://${WIKICONN_DOMAIN}
-      # Caddy is the only hop in front of this container.
+      # The edge Caddy is the only hop in front of this container.
       TRUST_PROXY_HOPS: '1'
       WIKI_SEARCH_CACHE_TTL_SECONDS: '300'
       # Wikimedia's policy asks automated clients to identify themselves and to
@@ -43,6 +33,10 @@ services:
       LOG_LEVEL: log
     expose:
       - '3001'
+    networks:
+      default:
+      edge:
+        aliases: [wikiconn-api]
     depends_on:
       dragonfly:
         condition: service_healthy
@@ -60,7 +54,9 @@ services:
     volumes:
       - dragonfly-data:/data
 
+networks:
+  edge:
+    external: true
+
 volumes:
-  caddy-data:
-  caddy-config:
   dragonfly-data:

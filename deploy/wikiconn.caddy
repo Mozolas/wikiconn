@@ -1,0 +1,21 @@
+# Site file for the shared edge Caddy (~/edge/config/sites/ on the server). The deploy
+# workflow replaces __WIKICONN_DOMAIN__. Everything lives on one origin, so the browser
+# never makes a cross-origin request and the socket upgrade stays on the same host.
+__WIKICONN_DOMAIN__ {
+	encode zstd gzip
+
+	# Socket.IO is mounted at the root of the API and must keep its own path,
+	# so it is proxied before the /api prefix rule and without stripping.
+	handle /socket.io/* {
+		reverse_proxy wikiconn-api:3001
+	}
+
+	# handle_path strips /api, so the API keeps serving /rooms, /wiki, /health.
+	handle_path /api/* {
+		reverse_proxy wikiconn-api:3001
+	}
+
+	handle {
+		reverse_proxy wikiconn-web:3000
+	}
+}
